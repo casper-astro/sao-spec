@@ -1,10 +1,7 @@
 #!/isr/bin/env python
 '''
-This script demonstrates programming an FPGA, configuring a wideband spectrometer and plotting the received data using the Python KATCP library along with the katcp_wrapper distributed in the corr package. Designed for use with TUT3 at the 2009 CASPER workshop.\n
-
-You need to have KATCP and CORR installed. Get them from http://pypi.python.org/pypi/katcp and http://casper.berkeley.edu/svn/trunk/projects/packetized_correlator/corr-0.4.0/
-
-\nAuthor: Jason Manley, November 2009.
+Plot SAO spectrometer
+Authors: Jason Manley, Mark Wagner
 '''
 
 #TODO: add support for ADC histogram plotting.
@@ -23,7 +20,7 @@ x=(numpy.array(range(8192)))*(400./8192)
 y=numpy.array(x*10000)
 
 pylab.subplot(211)
-#pylab.title('Integration number %i.')
+pylab.title('SAO Spectrometer')
 pylab.ylabel('Power (arbitrary units)')
 pylab.xlabel('Freq (MHz)')
 pylab.ylim(0,10000000000)
