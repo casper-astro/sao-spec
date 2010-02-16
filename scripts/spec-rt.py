@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/isr/bin/env python
 '''
 This script demonstrates programming an FPGA, configuring a wideband spectrometer and plotting the received data using the Python KATCP library along with the katcp_wrapper distributed in the corr package. Designed for use with TUT3 at the 2009 CASPER workshop.\n
 
@@ -17,22 +17,24 @@ katcp_port=7147
 
 #plotting window 
 pylab.ion()
-pylab.figure(num=1,figsize=(9,9))
+pylab.figure(num=1,figsize=(12,12))
 
-x=numpy.array(range(8192))
-y=numpy.array(x*1000)
+x=(numpy.array(range(8192)))*(400./8192)
+y=numpy.array(x*10000)
 
 pylab.subplot(211)
 #pylab.title('Integration number %i.')
 pylab.ylabel('Power (arbitrary units)')
-pylab.xlabel('Channel')
-pylab.xlim(0,8192)
+pylab.xlabel('Freq (MHz)')
+pylab.ylim(0,10000000000)
+pylab.xlim(75,125)
 line1,=pylab.semilogy(x,y,color='black')
 
 pylab.subplot(212)
 pylab.ylabel('Power (arbitrary units)')
-pylab.xlabel('Channel')
-pylab.xlim(0,8192)
+pylab.xlabel('Freq (MHz)')
+pylab.ylim(0,10000000000)
+pylab.xlim(75,125)
 line2,=pylab.semilogy(x,y,color='black')
 
 def exit_fail():
@@ -71,28 +73,28 @@ def plot_spectrum():
 
     for i in range(8192):
 	if interleave_a[i] < 1:
-	    interleave_a[i] = 1
-	if i > 10 and interleave_a[i] > max:
-	    max = interleave_a[i]
-	    max_index = i	    
+	    interleave_a[i] = interleave_a[i]*1000+1
+    if i > 10 and interleave_a[i] > max:
+	max = interleave_a[i]
+	max_index = i	    
 
-    print "Index of max value: "+str(max_index)
+#    print "Index of max value: "+str(max_index)
     
     for i in range(8192):
 	if interleave_b[i] < 1:
-	    interleave_b[i] = 1
+	    interleave_b[i] = interleave_b[i]*1000+1
 
 
     pylab.subplot(211)
-    pylab.title('Integration number %i.'%prev_integration)
+#    pylab.title('Integration number %i.'%prev_integration)
     line1.set_ydata(interleave_a)
-    pylab.xlim(0,8192)
+  #  pylab.xlim(0,8192)
     pylab.hold(False)
-    pylab.draw()
+#    pylab.draw()
 
     pylab.subplot(212)
     line2.set_ydata(interleave_b)
-    pylab.xlim(0,8192)
+  #  pylab.xlim(0,8192)
 
     #pylab.ioff()
 
@@ -130,8 +132,8 @@ try:
     logger.setLevel(10)
 
     print('Connecting to server %s on port %i... '%(roach,katcp_port)),
-    fpga = corr.katcp_wrapper.FpgaClient(roach, katcp_port, timeout=20,logger=logger)
-    time.sleep(2)
+    fpga = corr.katcp_wrapper.FpgaClient(roach, katcp_port, logger=logger)
+    time.sleep(3)
 
     if fpga.is_connected():
         print 'ok\n'
@@ -149,6 +151,7 @@ try:
     else:
         print 'Skipped.'
 
+    time.sleep(2)
     print 'Configuring accumulation period...',
     fpga.write_int('acc_len',opts.acc_len)
     print 'done'
@@ -165,21 +168,25 @@ try:
     else:   
         print 'Skipped.'
 
-    time.sleep(2)
 
-    prev_integration = fpga.read_uint('acc_cnt')
+#    prev_integration = fpga.read_uint('acc_cnt')
     while(1):
-        current_integration = fpga.read_uint('acc_cnt')
-	diff=current_integration - prev_integration
-        if diff==0:
-            time.sleep(0.01)
-        else:
-            if diff > 1:
-                print 'WARN: We lost %i integrations!'%(current_integration - prev_integration)
-            prev_integration = fpga.read_uint('acc_cnt')
-            print 'Grabbing integration number %i'%prev_integration
-	    print 'Grabbed it'
+#        current_integration = fpga.read_uint('acc_cnt')
+#	diff=current_integration - prev_integration
+#        if diff==0:
+#            time.sleep(0.01)
+#        else:
+#            if diff > 1:
+#                print 'WARN: We lost %i integrations!'%(current_integration - prev_integration)
+#            prev_integration = fpga.read_uint('acc_cnt')
+#            print 'Grabbing integration number %i'%prev_integration
+#	    print 'Grabbed it'	
+	try:	
             plot_spectrum()
+
+	except RuntimeError:
+	    print 'network read error occurred at %s. ignoring.' % time.asctime()
+
 
 except KeyboardInterrupt:
     exit_clean()
