@@ -1,4 +1,4 @@
-#!/isr/bin/env python
+#/isr/bin/env python
 '''
 Plot SAO spectrometer
 Authors: Jason Manley, Mark Wagner
@@ -9,29 +9,28 @@ Authors: Jason Manley, Mark Wagner
 
 import corr,time,numpy,struct,sys,logging,pylab
 
-bitstream = 'lgspec_16k_2x_2010_Jan_01_2018.bof'
+bitstream = 'lgspec_16k_2x_2010_Sep_11_1805.bof'
 katcp_port=7147
 
 #plotting window 
 pylab.ion()
 pylab.figure(num=1,figsize=(12,12))
-
 x=(numpy.array(range(8192)))*(400./8192)
-y=numpy.array(x*10000)
+y=numpy.array(x*10000000)
 
 pylab.subplot(211)
 pylab.title('SAO Spectrometer')
 pylab.ylabel('Power (arbitrary units)')
 pylab.xlabel('Freq (MHz)')
-pylab.ylim(0,10000000000)
-pylab.xlim(75,125)
+pylab.ylim(0,1000000000000)
+pylab.xlim(0,400)
 line1,=pylab.semilogy(x,y,color='black')
 
 pylab.subplot(212)
 pylab.ylabel('Power (arbitrary units)')
 pylab.xlabel('Freq (MHz)')
-pylab.ylim(0,10000000000)
-pylab.xlim(75,125)
+pylab.ylim(0,1000000000000)
+pylab.xlim(0,400)
 line2,=pylab.semilogy(x,y,color='black')
 
 def exit_fail():
@@ -47,6 +46,45 @@ def exit_clean():
         fpga.stop()
     except: pass
     exit()
+
+def write_datafile():
+
+    #write data to file (ascii)
+    #datafile=open('lgspec.dat','w')
+    
+    #for i in range(0,size(interleave_a))
+#	datafile.write(interleave_a[i])    
+#
+#    for i in range(0,size(nterleave_b))
+#	datafile.write(interleave_b[i])    
+    #datafile.close()
+
+    #write data to file (binary)
+    a_0=struct.unpack('>4096l',fpga.read('even',4096*4,0))
+    a_1=struct.unpack('>4096l',fpga.read('odd',4096*4,0))
+    b_0=struct.unpack('>4096l',fpga.read('even1',4096*4,0))
+    b_1=struct.unpack('>4096l',fpga.read('odd1',4096*4,0))
+
+    interleave_a=[]
+    interleave_b=[]
+
+
+    for i in range(4096):
+        interleave_a.append(a_0[i])
+        interleave_a.append(a_1[i])
+        interleave_b.append(b_0[i])
+        interleave_b.append(b_1[i])
+
+    acc_cnt=fpga.read_int('acc_cnt')
+
+    datafile=open('saospec_i'+str(acc_cnt)+'.bin','wb')
+    buf_a=struct.pack(">8192l",*interleave_a)
+    #buf_b=struct.pack(">8192l",*interleave_b)
+
+    datafile.write(buf_a)
+    #datafile.write(buf_b)
+    datafile.close()
+
 
 def plot_spectrum():
 
@@ -70,7 +108,8 @@ def plot_spectrum():
 
     for i in range(8192):
 	if interleave_a[i] < 1:
-	    interleave_a[i] = interleave_a[i]*1000+1
+	    interleave_a[i] = interleave_a[i]*10+1
+
     if i > 10 and interleave_a[i] > max:
 	max = interleave_a[i]
 	max_index = i	    
@@ -79,24 +118,23 @@ def plot_spectrum():
     
     for i in range(8192):
 	if interleave_b[i] < 1:
-	    interleave_b[i] = interleave_b[i]*1000+1
-
+	    interleave_b[i] = interleave_b[i]*10+1
 
     pylab.subplot(211)
 #    pylab.title('Integration number %i.'%prev_integration)
     line1.set_ydata(interleave_a)
   #  pylab.xlim(0,8192)
     pylab.hold(False)
-#    pylab.draw()
-
+    pylab.draw()
+    
     pylab.subplot(212)
     line2.set_ydata(interleave_b)
   #  pylab.xlim(0,8192)
-
     #pylab.ioff()
 
     pylab.hold(False)
     pylab.draw()
+
 
 
 #START OF MAIN:
@@ -157,6 +195,14 @@ try:
     fpga.write_int('cnt_rst',1) 
     fpga.write_int('cnt_rst',0) 
     print 'done'
+    #fpga.write_int('acc_len',8192) 
+
+    #configure
+    fpga.write_int('sync_period',100663295)
+    fpga.write_int('sync_sel',1)
+
+    fpga.write_int('acc_len',16384)
+    fpga.write_int('acc_len_sel',1)
 
     print 'Setting digital gain of all channels to %i...'%opts.gain,
     if not opts.skip:
@@ -179,6 +225,8 @@ try:
 #            print 'Grabbing integration number %i'%prev_integration
 #	    print 'Grabbed it'	
 	try:	
+	    print "Accumlation num: "+str(fpga.read_int('acc_cnt'))
+	    #write_datafile()
             plot_spectrum()
 
 	except RuntimeError:
