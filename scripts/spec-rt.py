@@ -226,8 +226,8 @@ try:
 #	    print 'Grabbed it'	
 	try:	
 	    print "Accumlation num: "+str(fpga.read_int('acc_cnt'))
-	    #write_datafile()
-            plot_spectrum()
+	    write_datafile()
+            #plot_spectrum()
 
 	except RuntimeError:
 	    print 'network read error occurred at %s. ignoring.' % time.asctime()
